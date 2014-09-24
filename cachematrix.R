@@ -20,7 +20,7 @@ makeCacheMatrix <- function(x = matrix()) {
   
         # update matrix value
         set <- function(newMatrix, inverse) {
-             stopifnot_square(newMatrix)
+             ensure_square_matrix(newMatrix)
              x<<-newMatrix
              inverse <<- NULL #new matrix invalidates old cache value
         }
@@ -29,7 +29,7 @@ makeCacheMatrix <- function(x = matrix()) {
 
         # hard set inverse to X
         setInverse <- function(x) {
-             stopifnot_square(x)
+             ensure_square_matrix(x)
 	     inverse <<- x
         }
 
@@ -48,13 +48,13 @@ makeCacheMatrix <- function(x = matrix()) {
 cacheSolve <- function(x, ...) {
         
         ## Basic sanity checks for input
-        stopifnot(!is.null(x))
-        stopifnot(!is.na(x))
-        stopifnot(!is.matrix(x))
-        stopifnot_square(x)
+        ensure(is.null(x), 'Input is null')
+        ensure(is.na(x), 'Input value is missing')
+        ensure(is.matrix(x), 'Input is not a matrix')
+        ensure_square_matrix(x)
+
         ## Try get result from cache, return result if found
         inverse <- x$getInverse()
-
         if(!is.null(inverse)) {
               print('Return inverse from cache')
               return(inverse)
@@ -69,9 +69,13 @@ cacheSolve <- function(x, ...) {
         inverse
 }
 
-stopifnot_square <-function(x) {
+ensure_square_matrix <-function(x) {
          d <- dim(x)
-         ifelse((d[1] == d[2]), TRUE, stop('Not a square matrix'))
+         ensure(!(d[1] == d[2]), 'Not a square matrix')
+}
+
+ensure <- function(cond, message) {
+          ifelse(cond, stop(message), TRUE)       
 }
 
 # Basic tests for validation
