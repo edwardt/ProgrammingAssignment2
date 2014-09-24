@@ -1,11 +1,43 @@
 ## Put comments here that give an overall description of what your
 ## functions do
 
-## Write a short comment describing this function
+## Create a vector of function that store/get
+## calculated result in global environment
+## Function only accepts to matrix type
 
 ## 
 makeCacheMatrix <- function(x = matrix()) {
-       
+        ## Caching scheme uses variable reference as the lookup key.
+        ## Since R ties reference variable is defining scope in lexical scoping,
+        ## which means that value(the inverse) has to be enclosed within variable 
+        ## This also means although 2 variables pointing to matrix 
+        ## with same valued, they are treated as seperate inverse calculations
+        ## So this is not a "true cache", 
+
+        inverse <- NULL
+
+        # normal cache function: get/set
+  
+        # update matrix value
+        set <- function(newMatrix, inverse) {
+             stopifnot_square(newMatrix)
+             x<<-newMatrix
+             inverse <<- NULL #new matrix invalidates old cache value
+        }
+        # get current matrix 
+        get <- function() x
+
+        # hard set inverse to X
+        setInverse <- function(x) {
+             stopifnot_square(x)
+	     inverse <<- x
+        }
+
+        # return what's in cache
+        getInverse <- function() inverse
+
+        list(get=get, set=set,
+             getInverse=getInverse, setInverse=setInverse)
 }
 
 
@@ -14,29 +46,80 @@ makeCacheMatrix <- function(x = matrix()) {
 ## before returning result.
 
 cacheSolve <- function(x, ...) {
-        ## Return a matrix that is the inverse of 'x'
         
         ## Basic sanity checks for input
-        stopifnot(!(is.na(x) | is.null(x) | !is.matrix(x))
-
+        stopifnot(!is.null(x))
+        stopifnot(!is.na(x))
+        stopifnot(!is.matrix(x))
+        stopifnot_square(x)
         ## Try get result from cache, return result if found
         inverse <- x$getInverse()
+
         if(!is.null(inverse)) {
-              message('Return inverse from cache')
+              print('Return inverse from cache')
               return(inverse)
         }
-    
-        ## Result not in cache, calculate one, 
+
+        ## Result is not in cache, calculate one, 
         ## store in cache then return result
         data <- x$get()
+
         inverse <- solve(data, ...)
-        x$setinverse(inverse)
+        x$setInverse(inverse)
         inverse
+}
+
+stopifnot_square <-function(x) {
+         d <- dim(x)
+         ifelse((d[1] == d[2]), TRUE, stop('Not a square matrix'))
 }
 
 # Basic tests for validation
 test <- function() {
+     m <- matrix(1:4, nrow=2, ncol=2)
+     n <- matrix(c(0,5,99,66), nrow=2, ncol=2)
+     print(m)
+     amatrix <- makeCacheMatrix(m)
+     bmatrix <- makeCacheMatrix(m)
+     cmatrix <- amatrix
+     print('Is amatrix$get identical to original matrix?')
+     print(identical(m, amatrix$get()))
+     ar<- cacheSolve(amatrix)
+     print('Inverse of amatrix: should not from cache')
+     print(ar)
+     print('Get amatrix inverse again.. should be null')
+     print(amatrix$getInverse())
+     print('cmatrix amatrix share same reference. Inverse of cmatrix be from cache')
+     cr1<-cmatrix$getInverse()
+     print(cr1)
 
+     print('Inverse of bmatrix be NULL should not from cache')
+     br1<-bmatrix$getInverse()
+     print(br1)
+     print('Set amatrix: ')
+     print(n)
+     amatrix$set(n)
+     print('Is amatrix$get identical to new  matrix?')
+     print(identical(n, amatrix$get()))
+     print('Is amatrix inverser cache should be null(invalidated)')
+     print(amatrix$getInverse())
+     print('Inverse of amatrix: should not from cache')
+     ar <- cacheSolve(amatrix)
+     print(ar)
+     print('Inverse of amatrix just calculated: now should be from cache')
+     amatrix$getInverse()
+     print('Inverse of cmatrix(same referecence to amatrix): should be from cache and has latest value')
+     cr2 <- cmatrix$getInverse()
+     print('Value of cmatrix no longer same as previous one. Still has old value?')
+     print(identical(cr1, cr2))
+     #cacheSolve(cmatrix)
+     print('Inverse of bmatrix be NULL should not from cache')
+     br2<-bmatrix$getInverse()
+     print(br2)
+     print('bmatrix has not changed')
+     print(identical(br1,br2))
+     print('Get bmatrix again: should be from cache')
+     print(cacheSolve(bmatrix))
 
 }
 
